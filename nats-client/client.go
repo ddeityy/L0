@@ -26,9 +26,7 @@ func StartReader() error {
 	nc, err := nats.Connect("0.0.0.0:4222", nats.Name("Reader"))
 
 	if err != nil {
-
 		return fmt.Errorf("could not connect to nats: %v", err)
-
 	}
 
 	bufferSize := 64
@@ -47,38 +45,28 @@ func StartReader() error {
 	//Добавляем хэндлеры, которые будут отрабатывать в случае ошибки вычитки, дисконнектов, или закрытого коннекта
 
 	nc.SetErrorHandler(func(_ *nats.Conn, _ *nats.Subscription, err error) {
-
 		log.Panicln("Read error:", err.Error())
-
 		errorChan <- err
-
 	})
 
 	nc.SetDisconnectErrHandler(func(_ *nats.Conn, err error) {
-
 		log.Panicln("Reader disconnected:", err.Error())
-
 	})
 
 	nc.SetClosedHandler(func(_ *nats.Conn) {
-
 		log.Panicln("Connection closed")
-
 	})
 
 	for msg := range natsChan {
-
 		order := database.Order{}
 
 		err := json.Unmarshal(msg.Data, &order)
 
 		log.Printf("%+v", order)
+
 		if err != nil {
-
 			errorChan <- err
-
 		}
-
 	}
 
 	_ = sub.Unsubscribe()

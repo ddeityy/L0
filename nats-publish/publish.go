@@ -15,10 +15,9 @@ func NatsWriter() error {
 	nc, err := nats.Connect("0.0.0.0:4222", nats.Name("Sender"))
 
 	if err != nil {
-
 		return fmt.Errorf("could not connect to nats: %v", err)
-
 	}
+
 	order := database.Order{}
 	gofakeit.Struct(&order)
 

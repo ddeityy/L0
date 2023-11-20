@@ -6,8 +6,6 @@ import (
 )
 
 func main() {
-	go func() {
-		publish.NatsWriter()
-	}()
+	go publish.NatsWriter()
 	client.StartReader()
 }
