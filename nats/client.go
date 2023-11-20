@@ -1,4 +1,4 @@
-package client
+package nats
 
 import (
 	"L0/database"

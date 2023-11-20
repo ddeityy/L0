@@ -1,11 +1,8 @@
 package main
 
-import (
-	client "L0/nats-client"
-	publish "L0/nats-publish"
-)
+import "L0/nats"
 
 func main() {
-	go publish.NatsWriter()
-	client.StartReader()
+	go nats.NatsWriter()
+	nats.StartReader()
 }
