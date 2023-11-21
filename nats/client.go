@@ -1,4 +1,4 @@
-package nats
+package main
 
 import (
 	"L0/database"
@@ -42,8 +42,6 @@ func StartReader() error {
 
 	errorChan := make(chan error, 1)
 
-	//Добавляем хэндлеры, которые будут отрабатывать в случае ошибки вычитки, дисконнектов, или закрытого коннекта
-
 	nc.SetErrorHandler(func(_ *nats.Conn, _ *nats.Subscription, err error) {
 		log.Panicln("Read error:", err.Error())
 		errorChan <- err
@@ -62,10 +60,15 @@ func StartReader() error {
 
 		err := json.Unmarshal(msg.Data, &order)
 
-		log.Printf("%+v", order)
-
 		if err != nil {
 			errorChan <- err
+		}
+
+		order, err = validateOrder(order)
+		if err != nil {
+			log.Printf("Invalid order: %v", err)
+		} else {
+			log.Printf("Valid order: %v", order.OrderUID)
 		}
 	}
 
