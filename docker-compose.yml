@@ -1,0 +1,23 @@
+networks:
+  nats:
+    name: nats
+    driver: bridge
+
+services:
+  stan-server:
+    networks:
+      - nats
+    image: nats-streaming:latest
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+
+  redis-cache:
+    networks:
+      - nats
+    image: redis:latest
+    ports:
+      - "6969:6969"
+    environment:
+      - REDIS_PASSWORD=password
+      - REDIS_PORT=6969

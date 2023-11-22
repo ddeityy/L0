@@ -2,27 +2,11 @@ package main
 
 import (
 	"L0/database"
-	"errors"
 	"math/rand"
 
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/google/uuid"
 )
-
-func validateOrder(order database.Order) (database.Order, error) {
-	if order.Payment.Transaction != order.OrderUID {
-		return order, errors.New("payment does not match")
-	}
-	if order.Delivery.OrderUID != order.OrderUID {
-		return order, errors.New("delivery does not match")
-	}
-	for _, item := range order.Items {
-		if item.TrackNumber != order.TrackNumber {
-			return order, errors.New("tracking does not match")
-		}
-	}
-	return order, nil
-}
 
 func createItems(n int, trackNumber uuid.UUID, incorrect bool) []database.OrderItem {
 	var items []database.OrderItem

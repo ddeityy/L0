@@ -5,25 +5,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"path/filepath"
 
 	"github.com/nats-io/nats.go"
+	"github.com/xeipuuv/gojsonschema"
 )
-
-/*
-periodically send post-requests to NATS
-subscribe to NATS queue and write request to DB & redis cache
-
-simple frontend to get data by order ID from
-
-if server dies -> get cache from DB
-
-*/
 
 func StartReader() error {
 
 	var err error
 
-	nc, err := nats.Connect("0.0.0.0:4222", nats.Name("Reader"))
+	nc, err := nats.Connect("nats://0.0.0.0:4222", nats.Name("Reader"))
 
 	if err != nil {
 		return fmt.Errorf("could not connect to nats: %v", err)
@@ -34,7 +26,7 @@ func StartReader() error {
 
 	defer nc.Close()
 
-	sub, err := nc.ChanSubscribe("test", natsChan)
+	sub, err := nc.ChanSubscribe("order", natsChan)
 
 	if err != nil {
 		return fmt.Errorf("could not subscribe to nats: %v", err)
@@ -54,11 +46,32 @@ func StartReader() error {
 	nc.SetClosedHandler(func(_ *nats.Conn) {
 		log.Panicln("Connection closed")
 	})
+	schemaPath, err := filepath.Abs("./schema.json")
+	if err != nil {
+		log.Panicln("Could not locate validation schema:", err)
+	}
+	schema := gojsonschema.NewReferenceLoader(fmt.Sprintf("file://%v", schemaPath))
 
 	for msg := range natsChan {
+
+		jsonData := gojsonschema.NewStringLoader(string(msg.Data))
+
+		result, err := gojsonschema.Validate(schema, jsonData)
+		if err != nil {
+			log.Println("Invalid schema:", err)
+		}
+		if result.Valid() {
+			log.Printf("The document is valid\n")
+		} else {
+			log.Printf("The document is not valid. see errors :\n")
+			for _, desc := range result.Errors() {
+				log.Printf("- %s\n", desc)
+			}
+		}
+
 		order := database.Order{}
 
-		err := json.Unmarshal(msg.Data, &order)
+		err = json.Unmarshal(msg.Data, &order)
 
 		if err != nil {
 			errorChan <- err
