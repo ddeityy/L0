@@ -10,8 +10,8 @@ import (
 
 //TrackNumber == OrderItem.TrackNumber
 
-type Order struct {
-	OrderUID          uuid.UUID   `json:"order_uid" gorm:"primaryKey" fake:"-"`
+type CacheOrder struct {
+	OrderUID          uuid.UUID   `json:"order_uid" fake:"-"`
 	TrackNumber       uuid.UUID   `json:"track_number" fake:"-"`
 	Entry             string      `json:"entry"`
 	Delivery          Delivery    `json:"delivery" fake:"-"`
@@ -27,8 +27,22 @@ type Order struct {
 	OofShard          string      `json:"oof_shard"`
 }
 
+type DBOrder struct {
+	OrderUID          uuid.UUID `gorm:"primaryKey" fake:"-"`
+	TrackNumber       uuid.UUID `fake:"-"`
+	Entry             string
+	Locale            string
+	InternalSignature string
+	CustomerID        string
+	DeliveryService   string
+	Shardkey          string
+	SmID              int
+	DateCreated       time.Time
+	OofShard          string
+}
+
 type Delivery struct {
-	OrderUID uuid.UUID `gorm:"primaryKey;foreignKey:Order.OrderUID" fake:"-"`
+	OrderUID uuid.UUID `gorm:"primaryKey" fake:"-"`
 	Name     string    `json:"name"`
 	Phone    string    `json:"phone"`
 	Zip      string    `json:"zip"`
@@ -39,7 +53,7 @@ type Delivery struct {
 }
 
 type Payment struct {
-	Transaction  uuid.UUID `json:"transaction" gorm:"primaryKey" fake:"-"`
+	Transaction  uuid.UUID `json:"transaction" fake:"-"`
 	RequestID    string    `json:"request_id"`
 	Currency     string    `json:"currency"`
 	Provider     string    `json:"provider"`
@@ -52,8 +66,8 @@ type Payment struct {
 }
 
 type OrderItem struct {
-	ChrtID      int       `json:"chrt_id" gorm:"primaryKey;autoIncrement"`
-	TrackNumber uuid.UUID `json:"track_number" fake:"-"`
+	ChrtID      int       `json:"chrt_id" gorm:"primaryKey;autoIncrement;unique" fake:"-"`
+	TrackNumber uuid.UUID `json:"track_number" fake:"-" `
 	Price       int       `json:"price"`
 	Rid         string    `json:"rid"`
 	Name        string    `json:"name"`

@@ -9,14 +9,16 @@ import (
 )
 
 func SendFakeData() error {
-
 	nc, err := nats.Connect("0.0.0.0:4222", nats.Name("Sender"))
 	if err != nil {
 		log.Println(err)
 		return fmt.Errorf("could not connect to nats: %v", err)
 	}
 	subject := "order"
-	order := CreateFakeOrder(randBool(), randBool(), randBool())
+	badItems := randBool()
+	badPayment := randBool()
+	order := CreateFakeOrder(badPayment, badItems)
+
 	b, err := json.Marshal(order)
 
 	if err != nil {
@@ -27,5 +29,6 @@ func SendFakeData() error {
 	if err != nil {
 		return err
 	}
+	log.Println("Published:", order.OrderUID, "Bad items:", badItems, "Bad payment:", badPayment)
 	return nil
 }

@@ -5,12 +5,9 @@ import (
 	"errors"
 )
 
-func validateOrder(order database.Order) (database.Order, error) {
+func validateOrder(order database.CacheOrder) (database.CacheOrder, error) {
 	if order.Payment.Transaction != order.OrderUID {
 		return order, errors.New("payment does not match")
-	}
-	if order.Delivery.OrderUID != order.OrderUID {
-		return order, errors.New("delivery does not match")
 	}
 	for _, item := range order.Items {
 		if item.TrackNumber != order.TrackNumber {

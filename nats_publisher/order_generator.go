@@ -10,21 +10,21 @@ import (
 
 func createItems(n int, trackNumber uuid.UUID, incorrect bool) []database.OrderItem {
 	var items []database.OrderItem
-	for i := 0; i < n; i++ {
+	for i := 0; i < n+1; i++ {
 		item := database.OrderItem{}
 		if incorrect {
 			item.TrackNumber = uuid.New()
 		} else {
 			item.TrackNumber = trackNumber
 		}
-		gofakeit.Struct(item)
+		gofakeit.Struct(&item)
 		items = append(items, item)
 	}
 	return items
 }
 
-func CreateFakeOrder(badPayment bool, badItems bool, badDelivery bool) database.Order {
-	order := database.Order{}
+func CreateFakeOrder(badPayment bool, badItems bool) database.CacheOrder {
+	order := database.CacheOrder{}
 	order.OrderUID = uuid.New()
 	order.TrackNumber = uuid.New()
 	delivery := database.Delivery{}
@@ -32,11 +32,7 @@ func CreateFakeOrder(badPayment bool, badItems bool, badDelivery bool) database.
 
 	order.Items = createItems(rand.Intn(10), order.TrackNumber, badItems)
 
-	if badDelivery {
-		delivery.OrderUID = uuid.New()
-	} else {
-		delivery.OrderUID = order.OrderUID
-	}
+	delivery.OrderUID = order.OrderUID
 	gofakeit.Struct(&delivery)
 	order.Delivery = delivery
 

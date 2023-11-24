@@ -1,6 +1,7 @@
 package main
 
 import (
+	"L0/cache"
 	"L0/database"
 	"encoding/json"
 	"fmt"
@@ -8,10 +9,12 @@ import (
 	"path/filepath"
 
 	"github.com/nats-io/nats.go"
+	"github.com/redis/go-redis/v9"
 	"github.com/xeipuuv/gojsonschema"
+	"gorm.io/gorm"
 )
 
-func StartReader() error {
+func StartReader(db *gorm.DB, rdb *redis.Client) error {
 
 	var err error
 
@@ -46,6 +49,7 @@ func StartReader() error {
 	nc.SetClosedHandler(func(_ *nats.Conn) {
 		log.Panicln("Connection closed")
 	})
+
 	schemaPath, err := filepath.Abs("./schema.json")
 	if err != nil {
 		log.Panicln("Could not locate validation schema:", err)
@@ -69,7 +73,7 @@ func StartReader() error {
 			}
 		}
 
-		order := database.Order{}
+		order := database.CacheOrder{}
 
 		err = json.Unmarshal(msg.Data, &order)
 
@@ -81,10 +85,20 @@ func StartReader() error {
 		if err != nil {
 			log.Printf("Invalid order: %v", err)
 		} else {
-			log.Printf("Valid order: %v", order.OrderUID)
+			_, err := cache.GetFromCache(order.OrderUID.String(), rdb)
+			log.Println(err)
+			if err == redis.Nil {
+				log.Println(order.TrackNumber, order.Items[0].TrackNumber)
+				err = database.SaveToDatabase(order, db)
+				if err != nil {
+					log.Println(err)
+				} else {
+					cache.SaveToCache(order)
+				}
+			}
 		}
-	}
 
+	}
 	_ = sub.Unsubscribe()
 	close(natsChan)
 	return nil
