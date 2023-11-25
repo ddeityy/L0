@@ -53,6 +53,7 @@ func RestoreCacheFromDB(db *gorm.DB, rdb *redis.Client) error {
 			return err
 		}
 	}
+	log.Println("Cache restored:", len(orders), "orders")
 	return nil
 }
 
@@ -64,7 +65,6 @@ func SaveToCache(order database.CacheOrder) error {
 	if err != nil {
 		return err
 	}
-	log.Println("Saved to cache:", order.TrackNumber, order.Items[0].TrackNumber)
 	return nil
 }
 
