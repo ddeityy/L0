@@ -3,10 +3,6 @@ networks:
     name: nats
     driver: bridge
 
-volumes:
-  nats-data:
-
-
 services:
   stan-server:
     networks:
@@ -29,9 +25,13 @@ services:
       POSTGRES_DB: "natsdb"
       POSTGRES_USER: "natsdbuser"
       POSTGRES_PASSWORD: "deeznats"
-      PGDATA: "/var/lib/postgresql/data/pgdata"
-    volumes:
-      - ./DB:/docker-entrypoint-initdb.d
-      - nats-data:/var/lib/postgresql/data
+      #PGDATA: "/var/lib/postgresql/data/pgdata"
     ports:
       - "5432:5432"
+
+#     volumes:
+#       - ./DB:/docker-entrypoint-initdb.d
+#       - nats-data:/var/lib/postgresql/data
+
+# volumes:
+#   nats-data:

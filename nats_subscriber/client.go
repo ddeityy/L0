@@ -88,11 +88,12 @@ func StartReader(db *gorm.DB, rdb *redis.Client) error {
 			_, err := cache.GetFromCache(order.OrderUID.String(), rdb)
 			log.Println(err)
 			if err == redis.Nil {
-				log.Println(order.TrackNumber, order.Items[0].TrackNumber)
 				err = database.SaveToDatabase(order, db)
 				if err != nil {
 					log.Println(err)
 				} else {
+					log.Println("---------------------------------------------")
+					log.Println("Saved to db:", order.TrackNumber, order.Items[0].TrackNumber)
 					cache.SaveToCache(order)
 				}
 			}
