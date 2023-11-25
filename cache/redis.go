@@ -31,14 +31,7 @@ func RestoreCacheFromDB(db *gorm.DB, rdb *redis.Client) error {
 		items := []database.OrderItem{}
 		db.First(&delivery, "order_uid = ?", order.OrderUID)
 		db.First(&payment, "transaction = ?", order.OrderUID)
-		db.Find(&items)
-		orderItems := []database.OrderItem{}
-		// for _, item := range items {
-		// 	if item.TrackNumber == order.TrackNumber {
-		// 		orderItems = append(orderItems, item)
-		// 	}
-		// }
-		// log.Printf("%+v", orderItems)
+		db.Find(&items, "track_number = ?", order.TrackNumber)
 		cacheOrder := database.CacheOrder{
 			OrderUID:          order.OrderUID,
 			TrackNumber:       order.TrackNumber,
@@ -53,7 +46,7 @@ func RestoreCacheFromDB(db *gorm.DB, rdb *redis.Client) error {
 			OofShard:          order.OofShard,
 			Delivery:          delivery,
 			Payment:           payment,
-			Items:             orderItems,
+			Items:             items,
 		}
 		err := SaveToCache(cacheOrder)
 		if err != nil {

@@ -26,7 +26,7 @@ func main() {
 	}
 	rdb := cache.GetRedisClient()
 
-	//cache.RestoreCacheFromDB(db, rdb)
+	cache.RestoreCacheFromDB(db, rdb)
 
 	r.GET("/orders/:uuid", func(c *gin.Context) {
 		uid := c.Param("uuid")
