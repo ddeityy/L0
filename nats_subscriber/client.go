@@ -85,10 +85,10 @@ func StartReader(db *gorm.DB, rdb *redis.Client) error {
 		if err != nil {
 			log.Printf("Invalid order: %v", err)
 		} else {
-			_, err := cache.GetFromCache(order.OrderUID.String(), rdb)
+			_, err := cache.GetFromCache(order.OrderUID, rdb)
 			log.Println(err)
 			if err == redis.Nil {
-				err = database.SaveToDatabase(order, db)
+				err = database.SaveToDB(order, db)
 				if err != nil {
 					log.Println(err)
 				} else {

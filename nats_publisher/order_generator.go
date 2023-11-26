@@ -8,12 +8,12 @@ import (
 	"github.com/google/uuid"
 )
 
-func createItems(n int, trackNumber uuid.UUID, incorrect bool) []database.OrderItem {
+func createItems(n int, trackNumber string, incorrect bool) []database.OrderItem {
 	var items []database.OrderItem
 	for i := 0; i < n+1; i++ {
 		item := database.OrderItem{}
 		if incorrect {
-			item.TrackNumber = uuid.New()
+			item.TrackNumber = uuid.New().String()
 		} else {
 			item.TrackNumber = trackNumber
 		}
@@ -23,10 +23,10 @@ func createItems(n int, trackNumber uuid.UUID, incorrect bool) []database.OrderI
 	return items
 }
 
-func CreateFakeOrder(badPayment bool, badItems bool) database.CacheOrder {
+func CreateFakeOrder(badPayment bool, badItems bool) *database.CacheOrder {
 	order := database.CacheOrder{}
-	order.OrderUID = uuid.New()
-	order.TrackNumber = uuid.New()
+	order.OrderUID = uuid.New().String()
+	order.TrackNumber = uuid.New().String()
 	delivery := database.Delivery{}
 	payment := database.Payment{}
 
@@ -37,7 +37,7 @@ func CreateFakeOrder(badPayment bool, badItems bool) database.CacheOrder {
 	order.Delivery = delivery
 
 	if badPayment {
-		payment.Transaction = uuid.New()
+		payment.Transaction = uuid.New().String()
 	} else {
 		payment.Transaction = order.OrderUID
 	}
@@ -46,7 +46,7 @@ func CreateFakeOrder(badPayment bool, badItems bool) database.CacheOrder {
 
 	gofakeit.Struct(&order)
 
-	return order
+	return &order
 }
 
 func randBool() bool {

@@ -15,7 +15,39 @@ func Connect() (*gorm.DB, error) {
 	}
 	return db, nil
 }
-func SaveToDatabase(order CacheOrder, db *gorm.DB) error {
+
+func GetFromDB(orderUID string, db *gorm.DB) (*CacheOrder, error) {
+	order := DBOrder{}
+	payment := Payment{}
+	delivery := Delivery{}
+	items := []OrderItem{}
+
+	result := db.First(&order, "order_uid = ?", orderUID)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	db.First(&delivery, "order_uid = ?", order.OrderUID)
+	db.First(&payment, "transaction = ?", order.OrderUID)
+	db.Find(&items, "track_number = ?", order.TrackNumber)
+	return &CacheOrder{
+		OrderUID:          order.OrderUID,
+		TrackNumber:       order.TrackNumber,
+		Entry:             order.Entry,
+		Locale:            order.Locale,
+		InternalSignature: order.InternalSignature,
+		CustomerID:        order.CustomerID,
+		DeliveryService:   order.DeliveryService,
+		Shardkey:          order.Shardkey,
+		SmID:              order.SmID,
+		DateCreated:       order.DateCreated,
+		OofShard:          order.OofShard,
+		Delivery:          delivery,
+		Payment:           payment,
+		Items:             items,
+	}, nil
+}
+
+func SaveToDB(order CacheOrder, db *gorm.DB) error {
 	dborder := DBOrder{
 		OrderUID:          order.OrderUID,
 		TrackNumber:       order.TrackNumber,
@@ -56,6 +88,5 @@ func SaveToDatabase(order CacheOrder, db *gorm.DB) error {
 			return result.Error
 		}
 	}
-
 	return nil
 }

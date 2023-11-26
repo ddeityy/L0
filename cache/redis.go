@@ -32,6 +32,9 @@ func RestoreCacheFromDB(db *gorm.DB, rdb *redis.Client) error {
 		db.First(&delivery, "order_uid = ?", order.OrderUID)
 		db.First(&payment, "transaction = ?", order.OrderUID)
 		db.Find(&items, "track_number = ?", order.TrackNumber)
+
+		delivery.OrderUID = ""
+
 		cacheOrder := database.CacheOrder{
 			OrderUID:          order.OrderUID,
 			TrackNumber:       order.TrackNumber,
@@ -61,27 +64,24 @@ func SaveToCache(order database.CacheOrder) error {
 	rdb := GetRedisClient()
 	ctx := context.Background()
 	jsonOrder, _ := json.Marshal(order)
-	err := rdb.Set(ctx, order.OrderUID.String(), jsonOrder, 0).Err()
+	err := rdb.Set(ctx, order.OrderUID, jsonOrder, 0).Err()
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-type KeyNotFoundError struct{}
-
-func (e *KeyNotFoundError) Error() string {
-	return "Key does not exist"
-}
-
-func GetFromCache(key string, rdb *redis.Client) (string, error) {
+func GetFromCache(key string, rdb *redis.Client) (*database.CacheOrder, error) {
 	ctx := context.Background()
 	val, err := rdb.Get(ctx, key).Result()
 	if err == redis.Nil {
-		return "", redis.Nil
+		return nil, redis.Nil
 	} else if err != nil {
-		return "", err
+		return nil, err
 	} else {
-		return val, nil
+		c := database.CacheOrder{}
+		json.Unmarshal([]byte(val), &c)
+		log.Println(c.Delivery.OrderUID)
+		return &c, nil
 	}
 }

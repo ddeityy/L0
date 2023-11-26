@@ -3,11 +3,11 @@ package main
 import (
 	"L0/cache"
 	"L0/database"
-	"encoding/json"
 	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 )
 
 type Response struct {
@@ -29,15 +29,21 @@ func main() {
 	cache.RestoreCacheFromDB(db, rdb)
 
 	r.GET("/orders/:uuid", func(c *gin.Context) {
-		uid := c.Param("uuid")
-		cachedOrder, err := cache.GetFromCache(uid, rdb)
+		uuid := c.Param("uuid")
+		cachedOrder, err := cache.GetFromCache(uuid, rdb)
+		if err == redis.Nil {
+			co, err := database.GetFromDB(uuid, db)
+			if err != nil {
+				c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			}
+			log.Println("Returning order from database:", uuid)
+			c.JSON(http.StatusOK, co)
+		}
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		}
-		log.Println("Returning cached order:", uid)
-		co := database.CacheOrder{}
-		json.Unmarshal([]byte(cachedOrder), &co)
-		c.JSON(http.StatusOK, co)
+		log.Println("Returning cached order:", uuid)
+		c.JSON(http.StatusOK, cachedOrder)
 	})
 	r.Run()
 }
