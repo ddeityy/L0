@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"runtime"
+	"sync"
 
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
@@ -21,41 +23,68 @@ func GetRedisClient() *redis.Client {
 	return client
 }
 
+func chunkify(orders []DBOrder) [][]DBOrder {
+	max := runtime.GOMAXPROCS(0)
+	var divided [][]DBOrder
+
+	chunkSize := (len(orders) + max - 1) / max
+	for i := 0; i < len(orders); i += chunkSize {
+		end := i + chunkSize
+
+		if end > len(orders) {
+			end = len(orders)
+		}
+
+		divided = append(divided, orders[i:end])
+	}
+	return divided
+}
+
 func RestoreCacheFromDB(db *gorm.DB, rdb *redis.Client) error {
 	orders := []DBOrder{}
 	db.Find(&orders)
-	for _, order := range orders {
-		delivery := Delivery{}
-		payment := Payment{}
-		items := []OrderItem{}
-		db.First(&delivery, "order_uid = ?", order.OrderUID)
-		db.First(&payment, "transaction = ?", order.OrderUID)
-		db.Find(&items, "track_number = ?", order.TrackNumber)
+	log.Println("Orders to restore from cache:", len(orders))
+	batches := chunkify(orders)
+	var wg sync.WaitGroup
+	for i := 0; i < len(batches); i++ {
+		wg.Add(1)
+		go func(batch []DBOrder) {
+			defer wg.Done()
+			for _, order := range batch {
+				delivery := Delivery{}
+				payment := Payment{}
+				items := []OrderItem{}
+				db.First(&delivery, "order_uid = ?", order.OrderUID)
+				db.First(&payment, "transaction = ?", order.OrderUID)
+				db.Find(&items, "track_number = ?", order.TrackNumber)
 
-		delivery.OrderUID = ""
+				delivery.OrderUID = ""
 
-		cacheOrder := CacheOrder{
-			OrderUID:          order.OrderUID,
-			TrackNumber:       order.TrackNumber,
-			Entry:             order.Entry,
-			Locale:            order.Locale,
-			InternalSignature: order.InternalSignature,
-			CustomerID:        order.CustomerID,
-			DeliveryService:   order.DeliveryService,
-			Shardkey:          order.Shardkey,
-			SmID:              order.SmID,
-			DateCreated:       order.DateCreated,
-			OofShard:          order.OofShard,
-			Delivery:          delivery,
-			Payment:           payment,
-			Items:             items,
-		}
-		err := SaveToCache(cacheOrder)
-		if err != nil {
-			return err
-		}
+				cacheOrder := CacheOrder{
+					OrderUID:          order.OrderUID,
+					TrackNumber:       order.TrackNumber,
+					Entry:             order.Entry,
+					Locale:            order.Locale,
+					InternalSignature: order.InternalSignature,
+					CustomerID:        order.CustomerID,
+					DeliveryService:   order.DeliveryService,
+					Shardkey:          order.Shardkey,
+					SmID:              order.SmID,
+					DateCreated:       order.DateCreated,
+					OofShard:          order.OofShard,
+					Delivery:          delivery,
+					Payment:           payment,
+					Items:             items,
+				}
+				err := SaveToCache(cacheOrder)
+				if err != nil {
+					log.Println(err)
+				}
+			}
+		}(batches[i])
 	}
-	log.Println("Cache restored:", len(orders), "orders")
+	wg.Wait()
+	log.Println("Restored from cache:", len(orders))
 	return nil
 }
 
@@ -71,16 +100,17 @@ func SaveToCache(order CacheOrder) error {
 }
 
 func GetFromCache(key string, rdb *redis.Client) (*CacheOrder, error) {
-	ctx := context.Background()
-	val, err := rdb.Get(ctx, key).Result()
+	val, err := rdb.Get(context.Background(), key).Result()
 	if err == redis.Nil {
 		return nil, redis.Nil
 	} else if err != nil {
 		return nil, err
 	} else {
 		c := CacheOrder{}
-		json.Unmarshal([]byte(val), &c)
-		log.Println(c.Delivery.OrderUID)
+		err := json.Unmarshal([]byte(val), &c)
+		if err != nil {
+			log.Println(err)
+		}
 		return &c, nil
 	}
 }

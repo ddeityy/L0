@@ -2,7 +2,6 @@ go 1.21.1
 
 use (
 	.
-	./backend
 	./nats_publisher
 	./nats_subscriber
 )

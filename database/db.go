@@ -1,8 +1,6 @@
 package database
 
 import (
-	"log"
-
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -80,9 +78,7 @@ func SaveToDB(order CacheOrder, db *gorm.DB) error {
 		return result.Error
 	}
 
-	log.Println(order.TrackNumber)
 	for _, item := range items {
-		log.Println(item.TrackNumber)
 		result = db.Create(&item)
 		if result.Error != nil {
 			return result.Error
