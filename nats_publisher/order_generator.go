@@ -46,6 +46,7 @@ func CreateFakeOrder(badPayment bool, badItems bool) *database.CacheOrder {
 	}
 
 	gofakeit.Struct(&payment)
+	payment.PaymentDt = int(gofakeit.Date().Unix())
 	order.Payment = payment
 
 	gofakeit.Struct(&order)

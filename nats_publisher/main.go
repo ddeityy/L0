@@ -30,6 +30,6 @@ func main() {
 		}
 
 		log.Println("Published:", order.OrderUID)
-		time.Sleep(2 * time.Millisecond)
+		time.Sleep(1000 * time.Millisecond)
 	}
 }
