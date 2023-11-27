@@ -1,7 +1,6 @@
 package main
 
 import (
-	"L0/cache"
 	"L0/database"
 	"encoding/json"
 	"fmt"
@@ -85,7 +84,7 @@ func StartReader(db *gorm.DB, rdb *redis.Client) error {
 		if err != nil {
 			log.Printf("Invalid order: %v", err)
 		} else {
-			_, err := cache.GetFromCache(order.OrderUID, rdb)
+			_, err := database.GetFromCache(order.OrderUID, rdb)
 			log.Println(err)
 			if err == redis.Nil {
 				err = database.SaveToDB(order, db)
@@ -93,7 +92,7 @@ func StartReader(db *gorm.DB, rdb *redis.Client) error {
 					log.Println(err)
 				} else {
 					log.Println("Saved to db:", order.TrackNumber, order.Items[0].TrackNumber)
-					err := cache.SaveToCache(order)
+					err := database.SaveToCache(order)
 					if err != nil {
 						log.Println(err)
 					}

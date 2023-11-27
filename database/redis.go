@@ -1,7 +1,6 @@
-package cache
+package database
 
 import (
-	"L0/database"
 	"context"
 	"encoding/json"
 	"log"
@@ -23,19 +22,19 @@ func GetRedisClient() *redis.Client {
 }
 
 func RestoreCacheFromDB(db *gorm.DB, rdb *redis.Client) error {
-	orders := []database.DBOrder{}
+	orders := []DBOrder{}
 	db.Find(&orders)
 	for _, order := range orders {
-		delivery := database.Delivery{}
-		payment := database.Payment{}
-		items := []database.OrderItem{}
+		delivery := Delivery{}
+		payment := Payment{}
+		items := []OrderItem{}
 		db.First(&delivery, "order_uid = ?", order.OrderUID)
 		db.First(&payment, "transaction = ?", order.OrderUID)
 		db.Find(&items, "track_number = ?", order.TrackNumber)
 
 		delivery.OrderUID = ""
 
-		cacheOrder := database.CacheOrder{
+		cacheOrder := CacheOrder{
 			OrderUID:          order.OrderUID,
 			TrackNumber:       order.TrackNumber,
 			Entry:             order.Entry,
@@ -60,7 +59,7 @@ func RestoreCacheFromDB(db *gorm.DB, rdb *redis.Client) error {
 	return nil
 }
 
-func SaveToCache(order database.CacheOrder) error {
+func SaveToCache(order CacheOrder) error {
 	rdb := GetRedisClient()
 	ctx := context.Background()
 	jsonOrder, _ := json.Marshal(order)
@@ -71,7 +70,7 @@ func SaveToCache(order database.CacheOrder) error {
 	return nil
 }
 
-func GetFromCache(key string, rdb *redis.Client) (*database.CacheOrder, error) {
+func GetFromCache(key string, rdb *redis.Client) (*CacheOrder, error) {
 	ctx := context.Background()
 	val, err := rdb.Get(ctx, key).Result()
 	if err == redis.Nil {
@@ -79,7 +78,7 @@ func GetFromCache(key string, rdb *redis.Client) (*database.CacheOrder, error) {
 	} else if err != nil {
 		return nil, err
 	} else {
-		c := database.CacheOrder{}
+		c := CacheOrder{}
 		json.Unmarshal([]byte(val), &c)
 		log.Println(c.Delivery.OrderUID)
 		return &c, nil

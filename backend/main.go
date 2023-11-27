@@ -1,7 +1,6 @@
 package main
 
 import (
-	"L0/cache"
 	"L0/database"
 	"log"
 	"net/http"
@@ -24,13 +23,13 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
-	rdb := cache.GetRedisClient()
+	rdb := database.GetRedisClient()
 
-	cache.RestoreCacheFromDB(db, rdb)
+	database.RestoreCacheFromDB(db, rdb)
 
 	r.GET("/orders/:uuid", func(c *gin.Context) {
 		uuid := c.Param("uuid")
-		cachedOrder, err := cache.GetFromCache(uuid, rdb)
+		cachedOrder, err := database.GetFromCache(uuid, rdb)
 		if err == redis.Nil {
 			co, err := database.GetFromDB(uuid, db)
 			if err != nil {
