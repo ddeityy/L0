@@ -27,7 +27,7 @@ func StartReader(db *gorm.DB, rdb *redis.Client) error {
 	}
 	defer nc.Close()
 
-	sub, err := nc.ChanSubscribe("order", natsChan)
+	sub, err := nc.ChanQueueSubscribe("order", "orders", natsChan)
 	if err != nil {
 		return fmt.Errorf("could not subscribe to nats: %v", err)
 	}
@@ -50,9 +50,8 @@ func StartReader(db *gorm.DB, rdb *redis.Client) error {
 	schema := gojsonschema.NewReferenceLoader(fmt.Sprintf("file://%v", schemaPath))
 
 	wg := sync.WaitGroup{}
-	max := 12
 
-	for i := 0; i < max+1; i++ {
+	for i := 0; i < 12; i++ {
 		wg.Add(1)
 		go func(ch chan *nats.Msg, wg *sync.WaitGroup) {
 			for msg := range ch {

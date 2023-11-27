@@ -9,13 +9,14 @@ import (
 )
 
 func main() {
-	for {
-		nc, err := nats.Connect("0.0.0.0:4222", nats.Name("Sender"))
-		if err != nil {
-			log.Panic("could not connect to nats:", err)
-		}
+	nc, err := nats.Connect("0.0.0.0:4222", nats.Name("Sender"))
+	if err != nil {
+		log.Panic("could not connect to nats:", err)
+	}
 
-		subject := "order"
+	subject := "order"
+
+	for {
 		order := CreateFakeOrder(randBool(), randBool())
 
 		b, err := json.Marshal(order)
