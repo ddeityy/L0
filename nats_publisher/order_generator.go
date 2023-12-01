@@ -1,12 +1,42 @@
-package main
+package pub
 
 import (
 	"L0/database"
+	"encoding/json"
+	"log"
 	"math/rand"
+	"time"
 
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/google/uuid"
+	"github.com/nats-io/nats.go"
 )
+
+func StartNatsPub() {
+	nc, err := nats.Connect("nats-server:4222", nats.Name("Sender"))
+	if err != nil {
+		log.Panic("could not connect to nats:", err)
+	}
+
+	subject := "order"
+
+	for {
+		order := CreateFakeOrder(randBool(), randBool())
+
+		b, err := json.Marshal(order)
+		if err != nil {
+			log.Println(err)
+		}
+
+		err = nc.Publish(subject, b)
+		if err != nil {
+			log.Println(err)
+		}
+
+		//log.Println("Published:", order.OrderUID)
+		time.Sleep(500 * time.Millisecond)
+	}
+}
 
 func createItems(n int, trackNumber string, incorrect bool) []database.OrderItem {
 	var items []database.OrderItem

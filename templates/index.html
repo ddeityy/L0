@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Nats</title>
+        <style>
+            *,
+            html {
+                margin: 0;
+                padding: 0;
+                border: 0;
+            }
+
+            html {
+                width: 100%;
+                height: 100%;
+            }
+
+            body {
+                width: 100%;
+                height: 100%;
+                position: relative;
+                background-color: rgb(92, 85, 76);
+            }
+
+            .main {
+                width: 100%;
+                height: 50%;
+                margin: 0;
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                color: white;
+                font-family: "Trebuchet MS", Helvetica, sans-serif;
+                text-align: center;
+            }
+
+            pre {
+                font-size: 20px;
+                text-align: left;
+                margin-left: 30%;
+            }
+
+            h1 {
+                font-size: 80px;
+            }
+
+            * {
+                font-size: 40px;
+            }
+
+            input#text {
+                width: 600px;
+                font-size: 20px;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="main">
+            <h1>Nats Test</h1>
+            <br>
+            <label for="order-input">
+                OrderUID:
+            </label>
+            <div id="order-input">
+                <input type="text" id="input-text" placeholder="">
+                <input type="button" value="get" id="input-btn" />
+            </div>
+            <br>
+            <input type="button" id="new-order" value="Create new order">
+            <br>
+            <div>
+                <p id="order"></p>
+            </div>
+        </div>
+    </body>
+    <script>
+        const inputButton = document.getElementById("input-btn");
+        const inputText = document.getElementById("input-text");
+        const newOrderButton = document.getElementById("new-order");
+        const order = document.getElementById("order");
+
+        document.addEventListener('DOMContentLoaded', function (event) {
+            inputText.value = '';
+        });
+        inputButton.addEventListener("click", fetchOrder);
+        newOrderButton.addEventListener("click", newOrder);
+
+        async function newOrder() {
+            const response = await fetch(`http://127.0.0.1:8080/orders/new`, {
+                method: "POST",
+            });
+
+            const result = await response.json();
+            if (!response.ok) {
+                console.error("Error:", response);
+            } else {
+                order.innerHTML = "<pre>" + JSON.stringify(result, null, 2) + "</pre>"
+            }
+        }
+
+        async function fetchOrder() {
+            uid = inputText.value
+            const response = await fetch(`http://127.0.0.1:8080/orders/${uid}`, {
+                method: "GET",
+            });
+            console.log(response)
+            if (response.status == 404) {
+                order.innerHTML = `Order not found`
+            } else {
+                const result = await response.json();
+                order.innerHTML = "<pre>" + JSON.stringify(result, null, 2) + "</pre>"
+            }
+        }
+    </script>
+
+</html>

@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"runtime"
 	"sync"
@@ -13,7 +14,7 @@ import (
 
 func GetRedisClient() *redis.Client {
 	client := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
+		Addr:     "redis:6379",
 		Password: "",
 		DB:       0,
 	})
@@ -44,6 +45,9 @@ func RestoreCacheFromDB(db *gorm.DB, rdb *redis.Client) error {
 	orders := []DBOrder{}
 	db.Find(&orders)
 	log.Println("Orders to restore from cache:", len(orders))
+	if len(orders) == 0 {
+		return errors.New("no orders to restore")
+	}
 	batches := chunkify(orders)
 	var wg sync.WaitGroup
 	for i := 0; i < len(batches); i++ {
@@ -76,7 +80,7 @@ func RestoreCacheFromDB(db *gorm.DB, rdb *redis.Client) error {
 					Payment:           payment,
 					Items:             items,
 				}
-				err := SaveToCache(cacheOrder)
+				err := SaveToCache(cacheOrder, rdb)
 				if err != nil {
 					log.Println(err)
 				}
@@ -84,12 +88,11 @@ func RestoreCacheFromDB(db *gorm.DB, rdb *redis.Client) error {
 		}(batches[i])
 	}
 	wg.Wait()
-	log.Println("Restored from cache:", len(orders))
+	log.Println("Restored from cache:", len(orders), "orders")
 	return nil
 }
 
-func SaveToCache(order CacheOrder) error {
-	rdb := GetRedisClient()
+func SaveToCache(order CacheOrder, rdb *redis.Client) error {
 	ctx := context.Background()
 	jsonOrder, _ := json.Marshal(order)
 	err := rdb.Set(ctx, order.OrderUID, jsonOrder, 0).Err()

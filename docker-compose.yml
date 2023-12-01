@@ -1,20 +1,11 @@
-networks:
-  nats:
-    name: nats
-    driver: bridge
-
 services:
-  stan-server:
-    networks:
-      - nats
+  nats-server:
     image: nats-streaming:latest
     ports:
       - "4222:4222"
       - "8222:8222"
 
-  redis-cache:
-    networks:
-      - nats
+  redis:
     image: redis:latest
     ports:
       - '6379:6379'
@@ -25,13 +16,23 @@ services:
       POSTGRES_DB: "natsdb"
       POSTGRES_USER: "natsdbuser"
       POSTGRES_PASSWORD: "deeznats"
-      #PGDATA: "/var/lib/postgresql/data/pgdata"
+      PGDATA: "/var/lib/postgresql/data/pgdata"
     ports:
       - "5432:5432"
+    volumes:
+      - ./DB:/docker-entrypoint-initdb.d
+      - nats-data:/var/lib/postgresql/data
 
-#     volumes:
-#       - ./DB:/docker-entrypoint-initdb.d
-#       - nats-data:/var/lib/postgresql/data
+  server:
+    build:
+      context: ${PWD}
+    depends_on:
+      - redis
+      - nats-server
+      - postgres
+    restart: on-failure
+    ports:
+      - "8080:8080"
 
-# volumes:
-#   nats-data:
+volumes:
+  nats-data:

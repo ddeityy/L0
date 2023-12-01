@@ -1,4 +1,4 @@
-package main
+package sub
 
 import (
 	"L0/database"
@@ -14,6 +14,22 @@ import (
 	"gorm.io/gorm"
 )
 
+func StartNatsSub() {
+	rdb := database.GetRedisClient()
+
+	db, err := database.Connect()
+	if err != nil {
+		log.Panic("Could not connect to db:", err)
+	}
+
+	err = db.AutoMigrate(database.DBOrder{}, database.Delivery{}, database.Payment{}, database.OrderItem{})
+	if err != nil {
+		log.Panic(err)
+	}
+
+	StartReader(db, rdb)
+}
+
 func StartReader(db *gorm.DB, rdb *redis.Client) error {
 
 	var err error
@@ -21,7 +37,7 @@ func StartReader(db *gorm.DB, rdb *redis.Client) error {
 	bufferSize := 64
 	natsChan := make(chan *nats.Msg, bufferSize)
 
-	nc, err := nats.Connect("nats://0.0.0.0:4222", nats.Name("Reader"))
+	nc, err := nats.Connect("nats-server:4222", nats.Name("Reader"))
 	if err != nil {
 		return fmt.Errorf("could not connect to nats: %v", err)
 	}
@@ -75,16 +91,16 @@ func StartReader(db *gorm.DB, rdb *redis.Client) error {
 					errorChan <- err
 				}
 
-				err = validateOrder(order)
+				err = ValidateOrder(order)
 				if err != nil {
-					log.Printf("Invalid order: %v", err)
+					//log.Printf("Invalid order: %v", err)
 				} else {
 					err = database.SaveToDB(order, db)
 					if err != nil {
 						log.Println(err)
 					} else {
-						log.Println("Saved to db:", order.OrderUID, "items:", len(order.Items))
-						err := database.SaveToCache(order)
+						//log.Println("Saved to db:", order.OrderUID, "items:", len(order.Items))
+						err := database.SaveToCache(order, rdb)
 						if err != nil {
 							log.Println(err)
 						}

@@ -64,7 +64,7 @@ type Payment struct {
 }
 
 type OrderItem struct {
-	ChrtID      int    `json:"chrt_id" gorm:"primaryKey;autoIncrement;unique" fake:"-"`
+	ChrtID      int    `json:"chrt_id"`
 	TrackNumber string `json:"track_number" fake:"-" `
 	Price       int    `json:"price"`
 	Rid         string `json:"rid"`

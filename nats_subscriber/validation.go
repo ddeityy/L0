@@ -1,11 +1,11 @@
-package main
+package sub
 
 import (
 	"L0/database"
 	"errors"
 )
 
-func validateOrder(order database.CacheOrder) error {
+func ValidateOrder(order database.CacheOrder) error {
 	if order.Payment.Transaction != order.OrderUID {
 		return errors.New("payment does not match")
 	}
