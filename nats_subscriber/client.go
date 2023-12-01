@@ -93,13 +93,13 @@ func StartReader(db *gorm.DB, rdb *redis.Client) error {
 
 				err = ValidateOrder(order)
 				if err != nil {
-					//log.Printf("Invalid order: %v", err)
+					log.Printf("Invalid order: %v", err)
 				} else {
 					err = database.SaveToDB(order, db)
 					if err != nil {
 						log.Println(err)
 					} else {
-						//log.Println("Saved to db:", order.OrderUID, "items:", len(order.Items))
+						log.Println("Saved to db:", order.OrderUID, "items:", len(order.Items))
 						err := database.SaveToCache(order, rdb)
 						if err != nil {
 							log.Println(err)

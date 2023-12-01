@@ -33,7 +33,7 @@ func StartNatsPub() {
 			log.Println(err)
 		}
 
-		//log.Println("Published:", order.OrderUID)
+		log.Println("Published:", order.OrderUID)
 		time.Sleep(500 * time.Millisecond)
 	}
 }
