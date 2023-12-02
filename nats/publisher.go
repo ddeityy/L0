@@ -9,14 +9,22 @@ import (
 
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/google/uuid"
-	"github.com/nats-io/nats.go"
+	"github.com/nats-io/stan.go"
 )
 
 func StartNatsPub(delay time.Duration) {
-	nc, err := nats.Connect("nats-server:4222", nats.Name("Sender"))
+	nc, err := GetNatsConn()
 	if err != nil {
 		log.Panic("could not connect to nats:", err)
+
 	}
+	defer nc.Close()
+
+	sc, err := stan.Connect("cluster", "pub", stan.NatsConn(nc))
+	if err != nil {
+		log.Fatalf("Can't connect: %v.\nMake sure a NATS Streaming Server is running at: %s", err, "nats-server:4222")
+	}
+	defer sc.Close()
 
 	subject := "order"
 
@@ -28,7 +36,7 @@ func StartNatsPub(delay time.Duration) {
 			log.Println(err)
 		}
 
-		err = nc.Publish(subject, b)
+		err = sc.Publish(subject, b)
 		if err != nil {
 			log.Println(err)
 		}

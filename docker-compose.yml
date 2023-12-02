@@ -4,6 +4,9 @@ services:
     ports:
       - "4222:4222"
       - "8222:8222"
+    command:
+      - "-cid"
+      - cluster
 
   redis:
     image: redis:latest
@@ -22,7 +25,6 @@ services:
     volumes:
       - ./DB:/docker-entrypoint-initdb.d
       - nats-data:/var/lib/postgresql/data
-
   server:
     build:
       context: ${PWD}

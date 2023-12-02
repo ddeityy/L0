@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/nats-io/stan.go"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -29,6 +30,17 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
+	defer nc.Close()
+
+	sc, err := stan.Connect("cluster", "sub", stan.NatsConn(nc),
+		stan.SetConnectionLostHandler(func(_ stan.Conn, reason error) {
+			log.Fatalf("Connection lost, reason: %v", reason)
+		}))
+	if err != nil {
+		log.Fatalf("Can't connect: %v.\nMake sure a NATS Streaming Server is running at: %s", err, "nats-server:4222")
+	}
+	log.Printf("Connected to %s clusterID: [%s] clientID: [%s]\n", "nats-server:4222", "cluster", "sub")
+	defer sc.Close()
 
 	subject := "order"
 
@@ -78,7 +90,7 @@ func main() {
 			log.Println(err)
 		}
 
-		err = nc.Publish(subject, b)
+		err = sc.Publish(subject, b)
 		if err != nil {
 			log.Println(err)
 		}

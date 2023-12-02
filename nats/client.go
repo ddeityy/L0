@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/nats-io/nats.go"
+	"github.com/nats-io/stan.go"
 	"github.com/redis/go-redis/v9"
 	"github.com/xeipuuv/gojsonschema"
 	"gorm.io/gorm"
@@ -35,29 +35,33 @@ func StartReader(db *gorm.DB, rdb *redis.Client) error {
 	var err error
 	errorChan := make(chan error, 1)
 	bufferSize := 64
-	natsChan := make(chan *nats.Msg, bufferSize)
+	msgCh := make(chan *stan.Msg, bufferSize)
 
-	nc, err := nats.Connect("nats-server:4222", nats.Name("Reader"))
+	nc, err := GetNatsConn()
 	if err != nil {
 		return fmt.Errorf("could not connect to nats: %v", err)
 	}
 	defer nc.Close()
 
-	sub, err := nc.ChanQueueSubscribe("order", "orders", natsChan)
+	sc, err := stan.Connect("cluster", "sub", stan.NatsConn(nc),
+		stan.SetConnectionLostHandler(func(_ stan.Conn, reason error) {
+			log.Fatalf("Connection lost, reason: %v", reason)
+		}))
+	if err != nil {
+		log.Fatalf("Can't connect: %v.\nMake sure a NATS Streaming Server is running at: %s", err, "nats-server:4222")
+	}
+	defer sc.Close()
+
+	log.Printf("Connected to %s clusterID: [%s] clientID: [%s]\n", "nats-server:4222", "cluster", "sub")
+	mcb := func(msg *stan.Msg) {
+		msgCh <- msg
+	}
+	defer close(msgCh)
+
+	sub, err := sc.QueueSubscribe("order", "orders", mcb)
 	if err != nil {
 		return fmt.Errorf("could not subscribe to nats: %v", err)
 	}
-
-	nc.SetErrorHandler(func(_ *nats.Conn, _ *nats.Subscription, err error) {
-		log.Panicln("Read error:", err.Error())
-		errorChan <- err
-	})
-	nc.SetDisconnectErrHandler(func(_ *nats.Conn, err error) {
-		log.Panicln("Reader disconnected:", err.Error())
-	})
-	nc.SetClosedHandler(func(_ *nats.Conn) {
-		log.Panicln("Connection closed")
-	})
 
 	schemaPath, err := filepath.Abs("./schema.json")
 	if err != nil {
@@ -69,7 +73,7 @@ func StartReader(db *gorm.DB, rdb *redis.Client) error {
 
 	for i := 0; i < 12; i++ {
 		wg.Add(1)
-		go func(ch chan *nats.Msg, wg *sync.WaitGroup) {
+		go func(ch chan *stan.Msg, wg *sync.WaitGroup) {
 			for msg := range ch {
 				jsonData := gojsonschema.NewStringLoader(string(msg.Data))
 
@@ -109,10 +113,9 @@ func StartReader(db *gorm.DB, rdb *redis.Client) error {
 					}
 				}
 			}
-		}(natsChan, &wg)
+		}(msgCh, &wg)
 	}
 	wg.Wait()
 	_ = sub.Unsubscribe()
-	close(natsChan)
 	return nil
 }
