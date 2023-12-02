@@ -32,14 +32,14 @@ func main() {
 	}
 	defer nc.Close()
 
-	sc, err := stan.Connect("cluster", "sub", stan.NatsConn(nc),
+	sc, err := stan.Connect("cluster", "HTTPServer", stan.NatsConn(nc),
 		stan.SetConnectionLostHandler(func(_ stan.Conn, reason error) {
 			log.Fatalf("Connection lost, reason: %v", reason)
 		}))
 	if err != nil {
 		log.Fatalf("Can't connect: %v.\nMake sure a NATS Streaming Server is running at: %s", err, "nats-server:4222")
 	}
-	log.Printf("Connected to %s clusterID: [%s] clientID: [%s]\n", "nats-server:4222", "cluster", "sub")
+	log.Printf("Connected to %s clusterID: [%s] clientID: [%s]\n", "nats-server:4222", "cluster", "HTTPServer")
 	defer sc.Close()
 
 	subject := "order"

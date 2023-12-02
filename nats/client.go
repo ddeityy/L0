@@ -33,9 +33,9 @@ func StartNatsSub() {
 func StartReader(db *gorm.DB, rdb *redis.Client) error {
 
 	var err error
-	errorChan := make(chan error, 1)
 	bufferSize := 64
 	msgCh := make(chan *stan.Msg, bufferSize)
+	defer close(msgCh)
 
 	nc, err := GetNatsConn()
 	if err != nil {
@@ -53,10 +53,10 @@ func StartReader(db *gorm.DB, rdb *redis.Client) error {
 	defer sc.Close()
 
 	log.Printf("Connected to %s clusterID: [%s] clientID: [%s]\n", "nats-server:4222", "cluster", "sub")
+
 	mcb := func(msg *stan.Msg) {
 		msgCh <- msg
 	}
-	defer close(msgCh)
 
 	sub, err := sc.QueueSubscribe("order", "orders", mcb)
 	if err != nil {
@@ -70,7 +70,6 @@ func StartReader(db *gorm.DB, rdb *redis.Client) error {
 	schema := gojsonschema.NewReferenceLoader(fmt.Sprintf("file://%v", schemaPath))
 
 	wg := sync.WaitGroup{}
-
 	for i := 0; i < 12; i++ {
 		wg.Add(1)
 		go func(ch chan *stan.Msg, wg *sync.WaitGroup) {
@@ -92,7 +91,7 @@ func StartReader(db *gorm.DB, rdb *redis.Client) error {
 
 				err = json.Unmarshal(msg.Data, &order)
 				if err != nil {
-					errorChan <- err
+					log.Println(err)
 				}
 
 				err = ValidateOrder(order)
