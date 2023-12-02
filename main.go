@@ -5,6 +5,7 @@ import (
 	nats "L0/nats"
 	"encoding/json"
 	"log"
+	"time"
 
 	"net/http"
 
@@ -86,7 +87,7 @@ func main() {
 		c.JSON(http.StatusCreated, gin.H{"OrderUID:": order.OrderUID})
 
 	})
-	go nats.StartNatsPub()
+	go nats.StartNatsPub(time.Millisecond * 500)
 	go nats.StartNatsSub()
 	r.Run()
 }

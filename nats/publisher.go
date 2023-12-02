@@ -12,7 +12,7 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-func StartNatsPub() {
+func StartNatsPub(delay time.Duration) {
 	nc, err := nats.Connect("nats-server:4222", nats.Name("Sender"))
 	if err != nil {
 		log.Panic("could not connect to nats:", err)
@@ -34,7 +34,7 @@ func StartNatsPub() {
 		}
 
 		log.Println("Published:", order.OrderUID)
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(delay)
 	}
 }
 
