@@ -1,4 +1,4 @@
-package sub
+package nats
 
 import (
 	"L0/database"

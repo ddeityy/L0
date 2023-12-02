@@ -2,8 +2,7 @@ package main
 
 import (
 	"L0/database"
-	pub "L0/nats_publisher"
-	sub "L0/nats_subscriber"
+	nats "L0/nats"
 	"encoding/json"
 	"log"
 
@@ -11,7 +10,6 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/nats-io/nats.go"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -26,9 +24,9 @@ func main() {
 	r.LoadHTMLGlob("templates/*")
 	rdb := database.GetRedisClient()
 
-	nc, err := nats.Connect("nats-server:4222", nats.Name("HTTP Server"))
+	nc, err := nats.GetNatsConn()
 	if err != nil {
-		log.Panic("could not connect to nats:", err)
+		log.Panic(err)
 	}
 
 	subject := "order"
@@ -73,7 +71,7 @@ func main() {
 		c.JSON(http.StatusOK, cachedOrder)
 	})
 	r.POST(("/orders/new"), func(c *gin.Context) {
-		order := pub.CreateFakeOrder(false, false)
+		order := nats.CreateFakeOrder(false, false)
 		b, err := json.Marshal(order)
 		if err != nil {
 			log.Println(err)
@@ -88,7 +86,7 @@ func main() {
 		c.JSON(http.StatusCreated, gin.H{"OrderUID:": order.OrderUID})
 
 	})
-	go pub.StartNatsPub()
-	go sub.StartNatsSub()
+	go nats.StartNatsPub()
+	go nats.StartNatsSub()
 	r.Run()
 }

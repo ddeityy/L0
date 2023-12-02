@@ -1,4 +1,4 @@
-package pub
+package nats
 
 import (
 	"L0/database"
