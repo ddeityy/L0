@@ -114,6 +114,7 @@ func GetFromCache(key string, rdb *redis.Client) (*CacheOrder, error) {
 		if err != nil {
 			log.Println(err)
 		}
+		c.Delivery.OrderUID = ""
 		return &c, nil
 	}
 }
