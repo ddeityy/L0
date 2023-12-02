@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/nats-io/nats.go"
 	"github.com/nats-io/stan.go"
 	"github.com/redis/go-redis/v9"
 	"github.com/xeipuuv/gojsonschema"
@@ -22,26 +23,26 @@ func StartNatsSub() {
 		log.Panic("Could not connect to db:", err)
 	}
 
+	nc, err := GetNatsConn()
+	if err != nil {
+		log.Panic("could not connect to nats:", err)
+	}
+	defer nc.Close()
+
 	err = db.AutoMigrate(database.DBOrder{}, database.Delivery{}, database.Payment{}, database.OrderItem{})
 	if err != nil {
 		log.Panic(err)
 	}
 
-	StartReader(db, rdb)
+	StartReader(db, rdb, nc)
 }
 
-func StartReader(db *gorm.DB, rdb *redis.Client) error {
+func StartReader(db *gorm.DB, rdb *redis.Client, nc *nats.Conn) error {
 
 	var err error
 	bufferSize := 64
 	msgCh := make(chan *stan.Msg, bufferSize)
 	defer close(msgCh)
-
-	nc, err := GetNatsConn()
-	if err != nil {
-		return fmt.Errorf("could not connect to nats: %v", err)
-	}
-	defer nc.Close()
 
 	sc, err := stan.Connect("cluster", "sub", stan.NatsConn(nc),
 		stan.SetConnectionLostHandler(func(_ stan.Conn, reason error) {

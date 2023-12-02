@@ -46,6 +46,7 @@ func StartNatsPub(delay time.Duration) {
 	}
 }
 
+// Returns a slice of (potentially incorrect) OrderItems
 func createItems(n int, trackNumber string, incorrect bool) []database.OrderItem {
 	var items []database.OrderItem
 
@@ -64,6 +65,7 @@ func createItems(n int, trackNumber string, incorrect bool) []database.OrderItem
 	return items
 }
 
+// Returns a fake (potentially incorrect) CacheOrder
 func CreateFakeOrder(badPayment bool, badItems bool) *database.CacheOrder {
 	order := database.CacheOrder{}
 	order.OrderUID = uuid.New().String()
